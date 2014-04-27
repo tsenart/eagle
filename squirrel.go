@@ -14,7 +14,7 @@ func ok(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var (
-		listen = flag.String("listen", ":7800", "Server listen address")
+		listen = flag.String("listen", ":7801", "Server listen address")
 	)
 	flag.Parse()
 

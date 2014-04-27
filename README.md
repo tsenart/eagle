@@ -28,9 +28,8 @@ Creates/updates environment and starts new instances with that env.
 
 ## Todo
 
-  * vegeta library integration to make http calls
-  * prometheus library integration to export results
   * service discovery integration to detect endpoints automatically
+  * config file support
   * API / load tests
   * vary on request/response body sizes
 
