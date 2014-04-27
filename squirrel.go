@@ -8,10 +8,6 @@ import (
 	"os"
 )
 
-func ok(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "OK")
-}
-
 func main() {
 	var (
 		listen = flag.String("listen", ":7801", "Server listen address")
@@ -23,7 +19,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/", ok)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "OK")
+	})
 
 	log.Printf("Starting server on %s", *listen)
 	log.Fatal(http.ListenAndServe(*listen, nil))

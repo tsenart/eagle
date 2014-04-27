@@ -106,10 +106,7 @@ func main() {
 	}()
 	go func() {
 		for {
-			select {
-			case r := <-results:
-				registry.collect(r)
-			}
+			registry.collect(<-results)
 		}
 	}()
 
