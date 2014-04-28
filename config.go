@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Name  string
 	Path  string
+	Rate  int
 	Tests map[string]configLayer `toml:"test"`
 }
 

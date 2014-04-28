@@ -63,6 +63,10 @@ func loadLoadTest(path string) (*LoadTest, error) {
 		return &LoadTest{}, err
 	}
 
+	if conf.Rate != 0 {
+		test.Rate = uint64(conf.Rate)
+	}
+
 	for name, t := range conf.Tests {
 		endpoints, err := t.Endpoints()
 		if err != nil {
