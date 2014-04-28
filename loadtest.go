@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 const (
 	// DefaultRate defines how many requests per second are sent to each
 	// endpoint.
-	DefaultRate = uint64(20)
+	DefaultRate = uint64(100)
 
 	// DefaultDuration defines how long an ephemeral test should get executed.
 	// Note that one-off load tests aren't supported at the moment.
@@ -99,4 +100,9 @@ func (l *LoadTestLayer) test(r uint64, d time.Duration, c chan Result) {
 			Latency: float64(result.Latency.Nanoseconds()),
 		}
 	}
+
+	// TODO(ts): move
+	metrics := vegeta.NewMetrics(results)
+	p := int(metrics.Success * float64(metrics.Requests))
+	log.Printf("[%s] success: %d / %d", l.Name, p, metrics.Requests)
 }

@@ -1,4 +1,4 @@
 build: eagle
 
 eagle: *.go
-	go build $^
+	go build -o $@ $^
