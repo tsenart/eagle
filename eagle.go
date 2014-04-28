@@ -24,8 +24,8 @@ func newRegistry(baseLabels map[string]string) *registry {
 	)
 
 	r.Register(
-		"eagle_requst_durations_mircoseconds",
-		"The total duration of HTTP requests (microseconds).",
+		"eagle_request_durations_nanoseconds",
+		"The total duration of HTTP requests (nanoseconds).",
 		baseLabels,
 		latencies,
 	)

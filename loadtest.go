@@ -96,7 +96,7 @@ func (l *LoadTestLayer) test(r uint64, d time.Duration, c chan Result) {
 		c <- Result{
 			Test:    l.Name,
 			Code:    strconv.Itoa(int(result.Code)),
-			Latency: float64(result.Latency.Nanoseconds()) / 1000,
+			Latency: float64(result.Latency.Nanoseconds()),
 		}
 	}
 }
