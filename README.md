@@ -8,29 +8,21 @@ A black-box HTTP testing framework. Inspired by [SoundCloud Canary][1].
 
 ## Usage
 
-Configuration example:
+Create a config file and start the server using the `-config` flag. Example:
 
 ```toml
-[eagle-squirrel]
-type = permanent
-address = http.squirrel.prod.eagle.
+name = "loadtest"
 
-[liebling-web]
-type = test
-address = http.web.prod.liebling.
+[tests.direct]
+address = "http.web.prod.liebling.srv"
+
+[tests.loadbalancer]
+url = "http://liebling"
 ```
-
-## API
-
-### api.eagle/<type>/<name>?<params>
-
-Creates/updates environment and starts new instances with that env.
 
 ## Todo
 
-  * service discovery integration to detect endpoints automatically
-  * config file support
-  * API / load tests
+  * API for load tests
   * vary on request/response body sizes
 
 ## Maintainer
