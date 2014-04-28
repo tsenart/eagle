@@ -1,7 +1,7 @@
 build: eagle squirrel
 
-eagle: eagle.go
-	go build -o $@ $<
+eagle: eagle.go config.go loadtest.go
+	go build -o $@ $^
 
 squirrel: squirrel.go
-	go build -o $@ $<
+	go build -o $@ $^
