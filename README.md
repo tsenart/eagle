@@ -1,9 +1,9 @@
 # Eagle
 
-A black-box HTTP testing framework. Inspired by [SoundCloud Canary][1].
+A black-box HTTP testing framework.
 
-  * reports metrics using [Prometheus][2]
-  * uses [Service Discovery][3] to find endpoints to test
+  * reports metrics using [Prometheus][1]
+  * uses Service Discovery to find endpoints to test
   * provides a server stub for comparision of routing layer metrics
 
 ![eagle](https://cloud.githubusercontent.com/assets/3432/2821618/3730c7b4-cf08-11e3-860c-854e153b7e6e.jpg)
@@ -27,10 +27,8 @@ url = "http://liebling"
   * API for load tests
   * vary on request/response body sizes
 
-## Maintainer
+## Author
 
-ISS <[iss@soundcloud.com](mailto:iss@soundcloud.com)>
+SoundCloud, Tobias Schmidt
 
-[1]: https://github.com/soundcloud/canary
-[2]: https://github.com/prometheus/prometheus
-[3]: http://go/service-discovery
+[1]: https://github.com/prometheus/prometheus
