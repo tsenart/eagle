@@ -103,6 +103,13 @@ func (l *LoadTestLayer) test(r uint64, d time.Duration, c chan Result) {
 
 	// TODO(ts): move
 	metrics := vegeta.NewMetrics(results)
-	p := int(metrics.Success * float64(metrics.Requests))
-	log.Printf("[%s] success: %d / %d", l.Name, p, metrics.Requests)
+	log.Printf(
+		"[%s] success: %d / %d (50th: %d 95th: %d 99th: %d)",
+		l.Name,
+		int(metrics.Success*float64(metrics.Requests)),
+		metrics.Requests,
+		metrics.Latencies.P50.Nanoseconds()/1000,
+		metrics.Latencies.P95.Nanoseconds()/1000,
+		metrics.Latencies.P99.Nanoseconds()/1000,
+	)
 }
