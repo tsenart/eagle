@@ -53,7 +53,7 @@ func (r *registry) collect(results chan Result) {
 }
 
 func loadLoadTest(path string) (*LoadTest, error) {
-	conf, err := loadConfig(path)
+	conf, err := NewConfig(path)
 	if err != nil {
 		return &LoadTest{}, err
 	}
@@ -64,7 +64,12 @@ func loadLoadTest(path string) (*LoadTest, error) {
 	}
 
 	for name, t := range conf.Tests {
-		test.Register(name, []string{t.URL})
+		endpoints, err := t.Endpoints()
+		if err != nil {
+			return &LoadTest{}, err
+		}
+
+		test.Register(name, endpoints)
 	}
 
 	return test, nil
