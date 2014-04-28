@@ -1,7 +1,4 @@
-build: eagle squirrel
+build: eagle
 
-eagle: eagle.go config.go loadtest.go
-	go build -o $@ $^
-
-squirrel: squirrel.go
-	go build -o $@ $^
+eagle: *.go
+	go build $^
