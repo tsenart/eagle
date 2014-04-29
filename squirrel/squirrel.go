@@ -39,6 +39,7 @@ func main() {
 				"method": strings.ToLower(r.Method),
 				"path":   "/",
 				"code":   strconv.Itoa(http.StatusOK),
+				"target": r.Header.Get("X-eagle-target"),
 			}
 
 			requestTotal.Increment(labels)

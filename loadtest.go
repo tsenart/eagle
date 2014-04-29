@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -89,6 +90,9 @@ func (l *LoadTestLayer) test(r uint64, d time.Duration, c chan Result) {
 	for _, endpoint := range l.Endpoints {
 		list = append(list, fmt.Sprintf("GET %s", endpoint))
 	}
+
+	hdr := http.Header{}
+	hdr.Add("X-eagle-target", l.Name)
 
 	// TODO(ts): Missing error handling.
 	targets, _ := vegeta.NewTargets(list, nil, nil)
