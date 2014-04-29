@@ -6,6 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/exp"
 )
 
 func main() {
@@ -19,10 +22,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	exp.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "OK")
 	})
+	exp.Handle(prometheus.ExpositionResource, prometheus.DefaultHandler)
 
 	log.Printf("Starting server on %s", *listen)
-	log.Fatal(http.ListenAndServe(*listen, nil))
+	log.Fatal(http.ListenAndServe(*listen, exp.DefaultCoarseMux))
 }
