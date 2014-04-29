@@ -110,8 +110,8 @@ func (l *LoadTestLayer) attack(ep string, resultc chan Result) {
 	// TODO(xla): Avoid panic.
 	targets, err := vegeta.NewTargets([]string{fmt.Sprintf("GET %s", ep)}, nil, hdr)
 	if err != nil {
-	  panic(err)
-  }
+		panic(err)
+	}
 
 	results := vegeta.Attack(targets, l.rate, l.duration)
 	for _, result := range results {
