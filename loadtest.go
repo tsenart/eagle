@@ -104,9 +104,9 @@ func (l *LoadTestLayer) test(c chan Result) {
 
 func (l *LoadTestLayer) attack(ep string, resultc chan Result) {
 	hdr := http.Header{}
-	hdr.Add("X-eagle-endpoint", ep)
-	hdr.Add("X-eagle-target", l.Name)
-	hdr.Add("X-eagle-test", l.loadTestName)
+	hdr.Add(HeaderEndpoint, ep)
+	hdr.Add(HeaderTarget, l.Name)
+	hdr.Add(HeaderTest, l.loadTestName)
 
 	// TODO(ts): Missing error handling.
 	targets, _ := vegeta.NewTargets([]string{fmt.Sprintf("GET %s", ep)}, nil, hdr)

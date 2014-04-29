@@ -11,7 +11,14 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	eagle "github.com/soundcloud/eagle"
 )
+
+var eagleHeaders = map[string]string{
+	"endpoint": eagle.HeaderEndpoint,
+	"target":   eagle.HeaderTarget,
+	"test":     eagle.HeaderTest,
+}
 
 func main() {
 	var (
@@ -36,12 +43,18 @@ func main() {
 		defer func(began time.Time, r *http.Request) {
 			d := time.Since(began)
 			labels := map[string]string{
-				"method":   strings.ToLower(r.Method),
-				"path":     "/",
-				"code":     strconv.Itoa(http.StatusOK),
-				"endpoint": r.Header.Get("X-eagle-endpoint"),
-				"target":   r.Header.Get("X-eagle-target"),
-				"test":     r.Header.Get("X-eagle-test"),
+				"method": strings.ToLower(r.Method),
+				"path":   "/",
+				"code":   strconv.Itoa(http.StatusOK),
+			}
+
+			for name, hdr := range eagleHeaders {
+				v := r.Header.Get(hdr)
+				if len(v) == 0 {
+					v = "unknown"
+				}
+
+				labels[name] = v
 			}
 
 			requestTotal.Increment(labels)

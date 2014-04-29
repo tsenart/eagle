@@ -10,6 +10,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+var (
+	HeaderEndpoint = "X-eagle-endpoint"
+	HeaderTarget   = "X-eagle-target"
+	HeaderTest     = "X-eagle-test"
+)
+
 type registry struct {
 	prometheus.Registry
 	latencies prometheus.Histogram
