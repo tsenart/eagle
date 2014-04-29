@@ -42,7 +42,6 @@ type LoadTestLayer struct {
 
 // Result contains the result of a single HTTP request sent against
 type Result struct {
-	Test     string
 	Target   string
 	Code     string
 	Latency  float64
@@ -114,7 +113,6 @@ func (l *LoadTestLayer) attack(ep string, resultc chan Result) {
 	results := vegeta.Attack(targets, l.rate, l.duration)
 	for _, result := range results {
 		resultc <- Result{
-			Test:     l.loadTestName,
 			Target:   l.Name,
 			Code:     strconv.Itoa(int(result.Code)),
 			Latency:  float64(result.Latency.Nanoseconds()),

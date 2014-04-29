@@ -43,7 +43,6 @@ func (r *registry) collect(results chan Result) {
 	for {
 		result := <-results
 		labels := map[string]string{
-			"test":     result.Test,
 			"target":   result.Target,
 			"code":     result.Code,
 			"endpoint": result.Endpoint,
@@ -99,7 +98,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	registry := newRegistry(map[string]string{"target": test.Name})
+	registry := newRegistry(map[string]string{"test": test.Name})
 
 	results := make(chan Result)
 	test.Run(results)
