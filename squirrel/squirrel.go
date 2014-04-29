@@ -36,10 +36,12 @@ func main() {
 		defer func(began time.Time, r *http.Request) {
 			d := time.Since(began)
 			labels := map[string]string{
-				"method": strings.ToLower(r.Method),
-				"path":   "/",
-				"code":   strconv.Itoa(http.StatusOK),
-				"target": r.Header.Get("X-eagle-target"),
+				"method":   strings.ToLower(r.Method),
+				"path":     "/",
+				"code":     strconv.Itoa(http.StatusOK),
+				"endpoint": r.Header.Get("X-eagle-endpoint"),
+				"target":   r.Header.Get("X-eagle-target"),
+				"test":     r.Header.Get("X-eagle-test"),
 			}
 
 			requestTotal.Increment(labels)

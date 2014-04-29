@@ -34,13 +34,19 @@ type LoadTest struct {
 type LoadTestLayer struct {
 	Name      string
 	Endpoints []string
+
+	rate         uint64
+	duration     time.Duration
+	loadTestName string
 }
 
 // Result contains the result of a single HTTP request sent against
 type Result struct {
-	Test    string
-	Code    string
-	Latency float64
+	Test     string
+	Target   string
+	Code     string
+	Latency  float64
+	Endpoint string
 }
 
 // NewLoadTest builds a new LoadTest with the given name.
@@ -67,41 +73,52 @@ func (t *LoadTest) Register(name string, endpoints []string) error {
 		return errors.New("missing layer endpoints")
 	}
 
-	t.layers = append(t.layers, &LoadTestLayer{name, endpoints})
+	t.layers = append(t.layers, &LoadTestLayer{
+		Name:         name,
+		Endpoints:    endpoints,
+		rate:         t.Rate,
+		duration:     t.Duration,
+		loadTestName: t.Name,
+	})
+
 	return nil
 }
 
 // Run tests all registered layers in parallel and passes the results to the
 // given Result chan.
 func (t *LoadTest) Run(c chan Result) {
-	for {
-		<-time.Tick(t.Duration)
-		for _, layer := range t.layers {
-			go func(l *LoadTestLayer) {
-				l.test(t.Rate, t.Duration, c)
-			}(layer)
-		}
+	for _, layer := range t.layers {
+		layer.test(c)
 	}
 }
 
-func (l *LoadTestLayer) test(r uint64, d time.Duration, c chan Result) {
-	// TODO(ts): Move to Register() to prevent unnecessary targets generaiton.
-	var list []string
-	for _, endpoint := range l.Endpoints {
-		list = append(list, fmt.Sprintf("GET %s", endpoint))
+func (l *LoadTestLayer) test(c chan Result) {
+	for _, ep := range l.Endpoints {
+		go func(ep string, c chan Result) {
+			for {
+				<-time.Tick(l.duration)
+				l.attack(ep, c)
+			}
+		}(ep, c)
 	}
+}
 
+func (l *LoadTestLayer) attack(ep string, resultc chan Result) {
 	hdr := http.Header{}
+	hdr.Add("X-eagle-endpoint", ep)
 	hdr.Add("X-eagle-target", l.Name)
+	hdr.Add("X-eagle-test", l.loadTestName)
 
 	// TODO(ts): Missing error handling.
-	targets, _ := vegeta.NewTargets(list, nil, nil)
-	results := vegeta.Attack(targets, r, d)
+	targets, _ := vegeta.NewTargets([]string{fmt.Sprintf("GET %s", ep)}, nil, hdr)
+	results := vegeta.Attack(targets, l.rate, l.duration)
 	for _, result := range results {
-		c <- Result{
-			Test:    l.Name,
-			Code:    strconv.Itoa(int(result.Code)),
-			Latency: float64(result.Latency.Nanoseconds()),
+		resultc <- Result{
+			Test:     l.loadTestName,
+			Target:   l.Name,
+			Code:     strconv.Itoa(int(result.Code)),
+			Latency:  float64(result.Latency.Nanoseconds()),
+			Endpoint: ep,
 		}
 	}
 

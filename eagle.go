@@ -43,8 +43,10 @@ func (r *registry) collect(results chan Result) {
 	for {
 		result := <-results
 		labels := map[string]string{
-			"test": result.Test,
-			"code": result.Code,
+			"test":     result.Test,
+			"target":   result.Target,
+			"code":     result.Code,
+			"endpoint": result.Endpoint,
 		}
 
 		r.codes.Increment(labels)
@@ -100,7 +102,7 @@ func main() {
 	registry := newRegistry(map[string]string{"target": test.Name})
 
 	results := make(chan Result)
-	go test.Run(results)
+	test.Run(results)
 	go registry.collect(results)
 
 	http.HandleFunc("/metrics", registry.Handler())
