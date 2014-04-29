@@ -95,7 +95,6 @@ func (l *LoadTestLayer) test(c chan Result) {
 	for _, ep := range l.Endpoints {
 		go func(ep string, c chan Result) {
 			for {
-				<-time.Tick(l.duration)
 				l.attack(ep, c)
 			}
 		}(ep, c)
