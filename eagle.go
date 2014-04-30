@@ -39,7 +39,7 @@ func main() {
 	flag.Var(&ts, "test.target", `Target to hit by the test with the following format: -test.target="NAME:address/url"`)
 	flag.Parse()
 
-	if *listen == "" {
+	if *listen == "" || len(ts) == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
