@@ -2,19 +2,62 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-var (
-	HeaderEndpoint = "X-eagle-endpoint"
-	HeaderTarget   = "X-eagle-target"
-	HeaderTest     = "X-eagle-test"
+const (
+	// defaultRate defines how many requests per second are sent to each
+	// endpoint.
+	defaultRate uint64 = 100
+
+	// defaultInterval defines how long an ephemeral test should get executed.
+	// Note that one-off load tests aren't supported at the moment.
+	defaultInterval = 1 * time.Second
 )
+
+var (
+	headerEndpoint = "X-eagle-endpoint"
+	headerTarget   = "X-eagle-target"
+	headerTest     = "X-eagle-test"
+)
+
+func main() {
+	var (
+		listen = flag.String("listen", ":7800", "Server listen address.")
+		name   = flag.String("test.name", "unknown", "Name of the test to run.")
+		path   = flag.String("test.path", "/", "Path to hit on the targets")
+		rate   = flag.Uint64("test.rate", defaultRate, "Number of requests to send during test duration.")
+
+		ts = targets{}
+	)
+	flag.Var(&ts, "test.target", `Target to hit by the test with the following format: -test.target="NAME:address/url"`)
+	flag.Parse()
+
+	if *listen == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	var (
+		test     = newTest(*name, *path, *rate, defaultInterval, ts)
+		registry = newRegistry(map[string]string{"test": test.name})
+		resultc  = make(chan result)
+	)
+
+	test.run(resultc)
+	go registry.collect(resultc)
+
+	http.HandleFunc("/metrics", registry.Handler())
+
+	log.Printf("Starting server on %s", *listen)
+	log.Fatal(http.ListenAndServe(*listen, nil))
+}
 
 type registry struct {
 	prometheus.Registry
@@ -45,72 +88,16 @@ func newRegistry(baseLabels map[string]string) *registry {
 	return &registry{r, latencies, codes}
 }
 
-func (r *registry) collect(results chan Result) {
+func (r *registry) collect(resultc chan result) {
 	for {
-		result := <-results
+		result := <-resultc
 		labels := map[string]string{
-			"target":   result.Target,
-			"code":     result.Code,
-			"endpoint": result.Endpoint,
+			"target":   result.target,
+			"code":     strconv.Itoa(int(result.Code)),
+			"endpoint": result.endpoint,
 		}
 
 		r.codes.Increment(labels)
-		r.latencies.Add(labels, result.Latency)
+		r.latencies.Add(labels, float64(result.Latency.Nanoseconds()))
 	}
-}
-
-func loadLoadTest(path string) (*LoadTest, error) {
-	conf, err := NewConfig(path)
-	if err != nil {
-		return &LoadTest{}, err
-	}
-
-	test, err := NewLoadTest(conf.Name)
-	if err != nil {
-		return &LoadTest{}, err
-	}
-
-	if conf.Rate != 0 {
-		test.Rate = uint64(conf.Rate)
-	}
-
-	for name, t := range conf.Tests {
-		endpoints, err := t.Endpoints()
-		if err != nil {
-			return &LoadTest{}, err
-		}
-
-		test.Register(name, endpoints)
-	}
-
-	return test, nil
-}
-
-func main() {
-	var (
-		listen = flag.String("listen", ":7800", "Server listen address")
-		config = flag.String("config", "./eagle.conf", "Path to config file")
-	)
-	flag.Parse()
-
-	if *listen == "" || *config == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	test, err := loadLoadTest(*config)
-	if err != nil {
-		fmt.Printf("could not load config from %s: %s\n", *config, err)
-		os.Exit(1)
-	}
-
-	registry := newRegistry(map[string]string{"test": test.Name})
-
-	results := make(chan Result)
-	test.Run(results)
-	go registry.collect(results)
-
-	http.HandleFunc("/metrics", registry.Handler())
-	log.Printf("Starting server on %s", *listen)
-	log.Fatal(http.ListenAndServe(*listen, nil))
 }
