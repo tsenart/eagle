@@ -58,9 +58,9 @@ type target struct {
 // attack uses vegeta to do a set of http requests against the given endpoint.
 func (t *target) attack(test *test, ep string, resultc chan result) {
 	hdr := http.Header{}
-	hdr.Add(headerEndpoint, ep)
-	hdr.Add(headerTarget, t.name)
-	hdr.Add(headerTest, test.name)
+	hdr.Add(HeaderEndpoint, ep)
+	hdr.Add(HeaderTarget, t.name)
+	hdr.Add(HeaderTest, test.name)
 
 	// TODO(xla): Avoid panic.
 	targets, err := vegeta.NewTargets([]string{fmt.Sprintf("GET %s", ep)}, nil, hdr)

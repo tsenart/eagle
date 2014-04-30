@@ -22,9 +22,9 @@ const (
 )
 
 var (
-	headerEndpoint = "X-eagle-endpoint"
-	headerTarget   = "X-eagle-target"
-	headerTest     = "X-eagle-test"
+	HeaderEndpoint = "X-eagle-endpoint"
+	HeaderTarget   = "X-eagle-target"
+	HeaderTest     = "X-eagle-test"
 )
 
 func main() {
