@@ -103,8 +103,8 @@ func (t *target) test(test *test, c chan result) {
 }
 
 // newTarget parses the given address and tries to construct endpoints from it.
-func newTarget(name, addr string) (target, error) {
-	t := target{
+func newTarget(name, addr string) (*target, error) {
+	t := &target{
 		name:      name,
 		endpoints: []string{},
 	}
@@ -115,7 +115,7 @@ func newTarget(name, addr string) (target, error) {
 	} else {
 		_, addrs, err := net.LookupSRV("", "", addr)
 		if err != nil {
-			return t, err
+			return nil, err
 		}
 
 		for _, a := range addrs {
@@ -126,13 +126,13 @@ func newTarget(name, addr string) (target, error) {
 	}
 
 	if len(t.endpoints) == 0 {
-		return t, fmt.Errorf("no endpoints for target '%s'", name)
+		return nil, fmt.Errorf("no endpoints for target '%s'", name)
 	}
 
 	return t, nil
 }
 
-type targets map[string]target
+type targets map[string]*target
 
 func (t targets) Set(s string) error {
 	sp := strings.SplitN(s, ":", 2)
