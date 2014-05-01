@@ -19,6 +19,9 @@ const (
 	// defaultInterval defines how long an ephemeral test should get executed.
 	// Note that one-off load tests aren't supported at the moment.
 	defaultInterval = 1 * time.Second
+
+	// defaultTimeout defines how long we wait for a request to return.
+	defaultTimeout = 1 * time.Second
 )
 
 var (
@@ -29,10 +32,11 @@ var (
 
 func main() {
 	var (
-		listen = flag.String("listen", ":7800", "Server listen address.")
-		name   = flag.String("test.name", "unknown", "Name of the test to run.")
-		path   = flag.String("test.path", "/", "Path to hit on the targets")
-		rate   = flag.Uint64("test.rate", defaultRate, "Number of requests to send during test duration.")
+		listen  = flag.String("listen", ":7800", "Server listen address.")
+		name    = flag.String("test.name", "unknown", "Name of the test to run.")
+		path    = flag.String("test.path", "/", "Path to hit on the targets")
+		rate    = flag.Uint64("test.rate", defaultRate, "Number of requests to send during test duration.")
+		timeout = flag.Duration("test.timeout", defaultTimeout, "Time until a request is discarded")
 
 		ts = targets{}
 	)
@@ -45,7 +49,7 @@ func main() {
 	}
 
 	var (
-		test     = newTest(*name, *path, *rate, defaultInterval, ts)
+		test     = newTest(*name, *path, *rate, defaultInterval, *timeout, ts)
 		registry = newRegistry(map[string]string{"test": test.name})
 		resultc  = make(chan result)
 	)

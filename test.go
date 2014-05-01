@@ -27,6 +27,7 @@ type test struct {
 	path     string
 	rate     uint64
 	interval time.Duration
+	timeout  time.Duration
 	targets  targets
 }
 
@@ -39,7 +40,7 @@ func (t *test) run(c chan result) {
 }
 
 // newTest returns a Test object.
-func newTest(name, path string, rate uint64, i time.Duration, ts targets) *test {
+func newTest(name, path string, rate uint64, i, t time.Duration, ts targets) *test {
 	return &test{
 		name:     name,
 		path:     path,
@@ -68,7 +69,10 @@ func (t *target) attack(test *test, ep string, resultc chan result) {
 		panic(err)
 	}
 
-	results := vegeta.Attack(targets, test.rate, test.interval)
+	a := vegeta.NewAttacker()
+	a.SetTimeout(test.timeout)
+
+	results := a.Attack(targets, test.rate, test.interval)
 	for _, r := range results {
 		resultc <- result{
 			target:   t.name,
