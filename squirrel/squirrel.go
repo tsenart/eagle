@@ -23,6 +23,7 @@ var eagleHeaders = map[string]string{
 func main() {
 	var (
 		listen = flag.String("listen", ":7801", "Server listen address")
+		delay  = flag.Duration("delay", 0, "Delay for responses")
 
 		requestDuration  = prometheus.NewCounter()
 		requestDurations = prometheus.NewDefaultHistogram()
@@ -62,6 +63,7 @@ func main() {
 			requestDurations.Add(labels, float64(d))
 		}(time.Now(), r)
 
+		time.Sleep(*delay)
 		fmt.Fprint(w, "OK")
 	})
 	http.Handle(prometheus.ExpositionResource, prometheus.DefaultRegistry.Handler())
