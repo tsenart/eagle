@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -22,8 +23,9 @@ var eagleHeaders = map[string]string{
 
 func main() {
 	var (
-		listen = flag.String("listen", ":7801", "Server listen address")
-		delay  = flag.Duration("delay", 0, "Delay for responses")
+		listen      = flag.String("listen", ":7801", "Server listen address")
+		delay       = flag.Duration("delay", 0, "Delay for responses")
+		logRequests = flag.Bool("log.request", false, "logs http request info as JSON to stdout")
 
 		requestDuration  = prometheus.NewCounter()
 		requestDurations = prometheus.NewDefaultHistogram()
@@ -45,7 +47,7 @@ func main() {
 			d := time.Since(began)
 			labels := map[string]string{
 				"method": strings.ToLower(r.Method),
-				"path":   "/",
+				"path":   r.URL.Path,
 				"code":   strconv.Itoa(http.StatusOK),
 			}
 
@@ -61,6 +63,10 @@ func main() {
 			requestTotal.Increment(labels)
 			requestDuration.IncrementBy(labels, float64(d))
 			requestDurations.Add(labels, float64(d))
+
+			if *logRequests {
+				logRequest(r)
+			}
 		}(time.Now(), r)
 
 		time.Sleep(*delay)
@@ -70,4 +76,23 @@ func main() {
 
 	log.Printf("Starting server on %s", *listen)
 	log.Fatal(http.ListenAndServe(*listen, nil))
+}
+
+type logReq struct {
+	Header map[string][]string `json:"header,omitempty"`
+	Method string              `json:"method"`
+	Path   string              `json:"path"`
+}
+
+func logRequest(r *http.Request) {
+	l := logReq{
+		Header: r.Header,
+		Method: r.Method,
+		Path:   r.URL.Path,
+	}
+	b, err := json.Marshal(l)
+	if err != nil {
+		panic(err)
+	}
+	log.Println(string(b))
 }
