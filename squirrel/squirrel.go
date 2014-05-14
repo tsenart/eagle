@@ -65,7 +65,7 @@ func main() {
 			requestDurations.Add(labels, float64(d))
 
 			if *logRequests {
-				logRequest(r)
+				logRequest(r, began)
 			}
 		}(time.Now(), r)
 
@@ -82,13 +82,15 @@ type logReq struct {
 	Header map[string][]string `json:"header,omitempty"`
 	Method string              `json:"method"`
 	Path   string              `json:"path"`
+	Time   int64               `json:"time"`
 }
 
-func logRequest(r *http.Request) {
+func logRequest(r *http.Request, t time.Time) {
 	l := logReq{
 		Header: r.Header,
 		Method: r.Method,
 		Path:   r.URL.Path,
+		Time:   t.UnixNano(),
 	}
 	b, err := json.Marshal(l)
 	if err != nil {
