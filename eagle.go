@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,6 +28,10 @@ var (
 	HeaderEndpoint = "X-eagle-endpoint"
 	HeaderTarget   = "X-eagle-target"
 	HeaderTest     = "X-eagle-test"
+
+	// For Prometheus:
+	namespace  = "eagle"
+	labelNames = []string{"target", "code", "endpoint"}
 )
 
 func main() {
@@ -50,58 +54,66 @@ func main() {
 
 	var (
 		test     = newTest(*name, *path, *rate, defaultInterval, *timeout, ts)
-		registry = newRegistry(map[string]string{"test": test.name})
+		registry = newRegistry(prometheus.Labels{"test": test.name})
 		resultc  = make(chan result)
 	)
 
 	test.run(resultc)
 	go registry.collect(resultc)
 
-	http.HandleFunc("/metrics", registry.Handler())
+	http.Handle("/metrics", prometheus.Handler())
 
 	log.Printf("Starting server on %s", *listen)
 	log.Fatal(http.ListenAndServe(*listen, nil))
 }
 
 type registry struct {
-	prometheus.Registry
-	latencies prometheus.Histogram
-	codes     prometheus.Counter
+	latencies *prometheus.SummaryVec
+	codes     *prometheus.CounterVec
 }
 
-func newRegistry(baseLabels map[string]string) *registry {
+func newRegistry(constLabels prometheus.Labels) *registry {
 	var (
-		r         = prometheus.NewRegistry()
-		latencies = prometheus.NewDefaultHistogram()
-		codes     = prometheus.NewCounter()
+		latencies = prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Namespace:   namespace,
+				Name:        "request_durations_nanoseconds",
+				Help:        "The total duration of HTTP requests (nanoseconds).",
+				ConstLabels: constLabels,
+			},
+			labelNames,
+		)
+		// TODO: Remove 'codes'. 'latencies' above already provides
+		// 'eagle_request_durations_nanoseconds_count', which contains
+		// the same value. However, rules have to be adjusted before
+		// 'codes' can be removed.
+		codes = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace:   namespace,
+				Name:        "response_codes_total",
+				Help:        "The total number of requests per HTTP Status Code.",
+				ConstLabels: constLabels,
+			},
+			labelNames,
+		)
 	)
 
-	r.Register(
-		"eagle_request_durations_nanoseconds",
-		"The total duration of HTTP requests (nanoseconds).",
-		baseLabels,
-		latencies,
-	)
-	r.Register(
-		"eagle_response_codes_total",
-		"The total number of requests per HTTP Status Code",
-		baseLabels,
-		codes,
-	)
+	prometheus.MustRegister(latencies)
+	prometheus.MustRegister(codes)
 
-	return &registry{r, latencies, codes}
+	return &registry{latencies, codes}
 }
 
 func (r *registry) collect(resultc chan result) {
 	for {
 		result := <-resultc
-		labels := map[string]string{
+		labels := prometheus.Labels{
 			"target":   result.target,
-			"code":     strconv.Itoa(int(result.Code)),
+			"code":     fmt.Sprint(result.Code),
 			"endpoint": result.endpoint,
 		}
 
-		r.codes.Increment(labels)
-		r.latencies.Add(labels, float64(result.Latency.Nanoseconds()))
+		r.codes.With(labels).Inc()
+		r.latencies.With(labels).Observe(float64(result.Latency.Nanoseconds()))
 	}
 }
