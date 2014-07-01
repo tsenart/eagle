@@ -70,9 +70,7 @@ func (t *target) attack(test *test, ep string, resultc chan result) {
 		panic(err)
 	}
 
-	a := vegeta.NewAttacker()
-	a.SetTimeout(test.timeout)
-
+	a := vegeta.NewAttacker(vegeta.DefaultRedirects, test.timeout, net.IPAddr{})
 	results := a.Attack(targets, test.rate, test.interval)
 	for _, r := range results {
 		resultc <- result{
