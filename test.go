@@ -46,6 +46,7 @@ func newTest(name, path string, rate uint64, i, t time.Duration, ts targets) *te
 		path:     path,
 		rate:     rate,
 		interval: i,
+		timeout:  t,
 		targets:  ts,
 	}
 }
