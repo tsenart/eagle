@@ -15,11 +15,15 @@ import (
 	eagle "github.com/soundcloud/eagle"
 )
 
-var eagleHeaders = map[string]string{
-	"endpoint": eagle.HeaderEndpoint,
-	"target":   eagle.HeaderTarget,
-	"test":     eagle.HeaderTest,
-}
+var (
+	namespace    = "squirrel"
+	labelNames   = []string{"method", "path", "code", "endpoint", "target", "test"}
+	eagleHeaders = map[string]string{
+		"endpoint": eagle.HeaderEndpoint,
+		"target":   eagle.HeaderTarget,
+		"test":     eagle.HeaderTest,
+	}
+)
 
 func main() {
 	var (
@@ -27,9 +31,30 @@ func main() {
 		delay       = flag.Duration("delay", 0, "Delay for responses")
 		logRequests = flag.Bool("log.request", false, "logs http request info as JSON to stdout")
 
-		requestDuration  = prometheus.NewCounter()
-		requestDurations = prometheus.NewDefaultHistogram()
-		requestTotal     = prometheus.NewCounter()
+		requestDuration = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "requests_duration_nanoseconds_total",
+				Help:      "Total amount of time squirrel has spent to answer requests in nanoseconds",
+			},
+			labelNames,
+		)
+		requestDurations = prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Namespace: namespace,
+				Name:      "requests_duration_nanoseconds",
+				Help:      "Amounts of time squirrel has spent answering requests in nanoseconds",
+			},
+			labelNames,
+		)
+		requestTotal = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "requests_total",
+				Help:      "Total number of requests made",
+			},
+			labelNames,
+		)
 	)
 	flag.Parse()
 
@@ -38,14 +63,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	prometheus.Register("squirrel_requests_total", "Total number of requests made", prometheus.NilLabels, requestTotal)
-	prometheus.Register("squirrel_requests_duration_nanoseconds_total", "Total amount of time squirrel has spent to answer requests in nanoseconds", prometheus.NilLabels, requestDuration)
-	prometheus.Register("squirrel_requests_duration_nanoseconds", "Amounts of time squirrel has spent answering requests in nanoseconds", prometheus.NilLabels, requestDurations)
+	prometheus.MustRegister(requestDuration)
+	prometheus.MustRegister(requestDurations)
+	prometheus.MustRegister(requestTotal)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		defer func(began time.Time, r *http.Request) {
-			d := time.Since(began)
-			labels := map[string]string{
+			duration := float64(time.Since(began))
+			labels := prometheus.Labels{
 				"method": strings.ToLower(r.Method),
 				"path":   r.URL.Path,
 				"code":   strconv.Itoa(http.StatusOK),
@@ -60,9 +85,9 @@ func main() {
 				labels[name] = v
 			}
 
-			requestTotal.Increment(labels)
-			requestDuration.IncrementBy(labels, float64(d))
-			requestDurations.Add(labels, float64(d))
+			requestTotal.With(labels).Inc()
+			requestDuration.With(labels).Add(duration)
+			requestDurations.With(labels).Observe(duration)
 
 			if *logRequests {
 				logRequest(r, began)
@@ -72,7 +97,7 @@ func main() {
 		time.Sleep(*delay)
 		fmt.Fprint(w, "OK")
 	})
-	http.Handle(prometheus.ExpositionResource, prometheus.DefaultRegistry.Handler())
+	http.Handle("/metrics", prometheus.Handler())
 
 	log.Printf("Starting server on %s", *listen)
 	log.Fatal(http.ListenAndServe(*listen, nil))
