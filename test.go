@@ -65,12 +65,12 @@ func (t *target) attack(test *test, ep string, resultc chan result) {
 	hdr.Add(HeaderTest, test.name)
 
 	// TODO(xla): Avoid panic.
-	targets, err := vegeta.NewTargets([]string{fmt.Sprintf("GET %s", ep)}, nil, hdr)
+	targets, err := vegeta.NewTargets([]byte(fmt.Sprintf("GET %s", ep)), nil, hdr)
 	if err != nil {
 		panic(err)
 	}
 
-	a := vegeta.NewAttacker(vegeta.DefaultRedirects, test.timeout, net.IPAddr{})
+	a := vegeta.NewAttacker(vegeta.DefaultRedirects, test.timeout, net.IPAddr{}, vegeta.DefaultTLSConfig)
 	results := a.Attack(targets, test.rate, test.interval)
 	for _, r := range results {
 		resultc <- result{
