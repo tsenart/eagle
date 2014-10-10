@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	vegeta "github.com/tsenart/vegeta/lib"
+	"github.com/tsenart/vegeta/lib"
 )
 
 // result contains the result of a single HTTP request sent against an
@@ -18,7 +18,7 @@ type result struct {
 	target   string
 	endpoint string
 
-	vegeta.Result
+	*vegeta.Result
 }
 
 // test represents a load test.
@@ -64,15 +64,19 @@ func (t *target) attack(test *test, ep string, resultc chan result) {
 	hdr.Add(HeaderTarget, t.name)
 	hdr.Add(HeaderTest, test.name)
 
-	// TODO(xla): Avoid panic.
-	targets, err := vegeta.NewTargets([]byte(fmt.Sprintf("GET %s", ep)), nil, hdr)
-	if err != nil {
-		panic(err)
-	}
+	target := &vegeta.Target{Method: "GET", URL: ep, Body: nil, Header: hdr}
+	targeter := func() (*vegeta.Target, error) { return target, nil }
+	a := vegeta.NewAttacker(
+		vegeta.DefaultRedirects,
+		test.timeout,
+		net.IPAddr{},
+		vegeta.DefaultTLSConfig,
+	)
 
-	a := vegeta.NewAttacker(vegeta.DefaultRedirects, test.timeout, net.IPAddr{}, vegeta.DefaultTLSConfig)
-	results := a.Attack(targets, test.rate, test.interval)
-	for _, r := range results {
+	rc := a.Attack(targeter, test.rate, test.interval)
+	results := vegeta.Results{}
+	for r := range rc {
+		results = append(results, r)
 		resultc <- result{
 			target:   t.name,
 			endpoint: ep,
